@@ -15,11 +15,15 @@ import androidx.recyclerview.widget.RecyclerView
 
 class HeaderFooterAdapter(
     val wrappedAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>,
-    val headers: MutableList<View> = mutableListOf(),
-    val footers: MutableList<View> = mutableListOf(),
+    val headers: List<View>? = null,
+    val footers: List<View>? = null,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private val mHeaders = mutableListOf<View>()
+    private val mFooters = mutableListOf<View>()
 
     init {
+        headers?.toCollection(mHeaders)
+        footers?.toCollection(mFooters)
         wrappedAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
                 super.onChanged()
@@ -56,9 +60,9 @@ class HeaderFooterAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         if (viewType in VIEW_TYPE_HEADER until 0) {
             if (viewType in VIEW_TYPE_HEADER until VIEW_TYPE_FOOTER) {
-                return SimpleViewHolder(headers[viewType - VIEW_TYPE_HEADER])
+                return SimpleViewHolder(mHeaders[viewType - VIEW_TYPE_HEADER])
             } else {
-                return SimpleViewHolder(footers[viewType - VIEW_TYPE_FOOTER])
+                return SimpleViewHolder(mFooters[viewType - VIEW_TYPE_FOOTER])
             }
         } else {
             val wrappedViewHolder = wrappedAdapter.onCreateViewHolder(parent, viewType)
@@ -91,31 +95,31 @@ class HeaderFooterAdapter(
 
     private fun getWrappedItemCount(): Int = wrappedAdapter.itemCount
 
-    private fun hasHeaders(): Boolean = headers.isEmpty()
-    private fun hasFooters(): Boolean = footers.isEmpty()
+    private fun hasHeaders(): Boolean = mHeaders.isEmpty()
+    private fun hasFooters(): Boolean = mFooters.isEmpty()
 
-    fun getHeaderCount(): Int = headers.size
-    fun getFooterCount(): Int = footers.size
+    fun getHeaderCount(): Int = mHeaders.size
+    fun getFooterCount(): Int = mFooters.size
 
     fun addHeader(header: View) {
-        headers.add(header)
-        notifyItemChanged(headers.lastIndex)
+        mHeaders.add(header)
+        notifyItemChanged(mHeaders.lastIndex)
     }
 
     fun addHeaders(headers: Collection<View>) {
-        this.headers.addAll(headers)
+        this.mHeaders.addAll(headers)
         notifyDataSetChanged()
     }
 
     fun insertHeader(position: Int, header: View) {
-        headers.add(position, header)
+        mHeaders.add(position, header)
         notifyItemInserted(position)
     }
 
     fun removeHeader(header: View): Boolean {
-        val idx = headers.indexOf(header)
+        val idx = mHeaders.indexOf(header)
         if (idx > -1) {
-            val result = headers.remove(header)
+            val result = mHeaders.remove(header)
             if (result) {
                 notifyItemRemoved(idx)
             }
@@ -125,19 +129,24 @@ class HeaderFooterAdapter(
     }
 
     fun addFooter(footer: View) {
-        footers.add(footer)
-        notifyItemChanged(footers.lastIndex + getHeaderCount() + wrappedAdapter.itemCount)
+        mFooters.add(footer)
+        notifyItemChanged(mFooters.lastIndex + getHeaderCount() + wrappedAdapter.itemCount)
+    }
+
+    fun addFooter(position: Int, footer: View) {
+        mFooters.add(position, footer)
+        notifyItemChanged(position + getHeaderCount() + wrappedAdapter.itemCount)
     }
 
     fun addFooters(footers: Collection<View>) {
-        this.footers.addAll(footers)
+        this.mFooters.addAll(footers)
         notifyDataSetChanged()
     }
 
     fun removeFooter(footer: View): Boolean {
-        val idx = footers.indexOf(footer)
+        val idx = mFooters.indexOf(footer)
         if (idx > -1) {
-            val result = footers.remove(footer)
+            val result = mFooters.remove(footer)
             if (result) {
                 notifyItemRemoved(idx + getHeaderCount() + wrappedAdapter.itemCount)
             }
