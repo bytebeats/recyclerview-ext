@@ -1,5 +1,6 @@
 package me.bytebeats.recycler
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.util.AttributeSet
@@ -31,6 +32,19 @@ class ScrollFrameLayout @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
+
+    init {
+        addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (mScrollableView?.left ?: 0 != 0) {
+                mOnPositionChangeListener?.apply {
+                    mScrollableView?.offsetTopAndBottom(getOffsetX() - mScrollableView!!.left)
+                    mScrollableView?.offsetTopAndBottom(getOffsetY() - mScrollableView!!.top)
+                }
+            }
+        }
+    }
+
+    var mScrollAxis = SCROLL_AXIS_HORIZONTAL
 
     private var mScrollableView: View? = null
 
@@ -80,7 +94,7 @@ class ScrollFrameLayout @JvmOverloads constructor(
         (ViewConfiguration.get(context).scaledTouchSlop / sensitivity).toInt()
     }
 
-    private var mContentOffsetX = 0
+    var mContentOffsetX = 0
     var mScrollableViewId = 0
         set(value) {
             field = value
@@ -93,6 +107,7 @@ class ScrollFrameLayout @JvmOverloads constructor(
 
     interface OnPositionChangeListener {
         fun getOffsetX(): Int
+        fun getOffsetY(): Int
         fun onPositionChanged(layout: ScrollFrameLayout, view: View, left: Int, top: Int, dx: Int, dy: Int)
     }
 
@@ -143,6 +158,7 @@ class ScrollFrameLayout @JvmOverloads constructor(
         return false
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         var result = false
         if (isScrolling() && isDragEnable) {
@@ -162,20 +178,25 @@ class ScrollFrameLayout @JvmOverloads constructor(
         }
     }
 
-    private fun scrollItem(dx: Int, dy: Int) {
+    fun isHorizontalScroll(): Boolean = mScrollAxis == SCROLL_AXIS_HORIZONTAL
+
+    fun scrollItem(dx: Int, dy: Int) {
         mScrollableView?.let {
-            val oldX = it.left
-//            val oldY = it.top
-            val clampedX = mViewDragCallback.clampViewPositionHorizontal(it, oldX + dx, dx)
-//            val clampedY = mViewDragCallback.clampViewPositionVertical(it, oldY + dy, dy)
-            val newDx = clampedX - oldX
-//            val newDy = clampedY - oldY
-            it.offsetLeftAndRight(newDx)
-//            it.offsetTopAndBottom(newDy)
+            if (isHorizontalScroll()) {
+                val oldX = it.left
+                val clampedX = mViewDragCallback.clampViewPositionHorizontal(it, oldX + dx, dx)
+                val newDx = clampedX - oldX
+                it.offsetLeftAndRight(newDx)
+            } else {
+                val oldY = it.top
+                val clampedY = mViewDragCallback.clampViewPositionVertical(it, oldY + dy, dy)
+                val newDy = clampedY - oldY
+                it.offsetTopAndBottom(newDy)
+            }
         }
     }
 
-    private fun scrollItemBy(dx: Int, dy: Int, listener: OnPositionChangeListener?) {
+    fun scrollItemBy(dx: Int, dy: Int, listener: OnPositionChangeListener?) {
         mScrollableView?.let {
             val oldX = it.left
             val oldY = it.top
@@ -205,6 +226,10 @@ class ScrollFrameLayout @JvmOverloads constructor(
     private fun convertVelocityToDistance(velocity: Float): Int = (velocity * scroll_factor).toInt()
 
     private fun <T> quickLazy(initializer: () -> T): Lazy<T> = lazy(LazyThreadSafetyMode.NONE, initializer)
+
+    enum class ScrollAxis {
+        HORIZONTAL, VERTICAL
+    }
 
     companion object {
         private const val scroll_factor = 0.1
