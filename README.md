@@ -1,4 +1,4 @@
-# recycler-views-ext
+# recyclerview-ext
 Collection of powerful recycler views. Included ListView, GridView, RecyclerView, and so on. So reycler views can be added headers, footers, pinned sections.
 <br><br>在RecyclerView的基础之上扩展而成的 RecyclerViews. 
 <br>如可添加 header 和 footer 的```HeaderAndFooterRecyclerView```;
